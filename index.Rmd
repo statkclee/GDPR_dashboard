@@ -1,0 +1,53 @@
+---
+title: "GDPR"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: row
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+source("code/01-get-data.R", encoding = "UTF-8")
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### 조항별 건수와 금액
+
+```{r gdpr-articles}
+gdpr_tbl %>% 
+  unnest(articles) %>% 
+  group_by(articles) %>% 
+  summarise(건수 = n(),
+            금액 = sum(price)) %>% 
+  ggplot(aes(x=건수, y=금액, label = articles)) +
+    geom_point() +
+    theme_minimal(base_family="NanumGothic") +
+    scale_y_log10(labels = scales::dollar_format(prefix ="€")) +
+   geom_text_repel()
+
+```
+
+### 주요 인용단어
+
+```{r gdpr-words}
+gdpr_df %>% 
+ select(authority, summary) %>% 
+ unnest_tokens(word, summary) %>% 
+ anti_join(stop_words) %>% 
+ count(word, sort = TRUE) %>% 
+ head(30) %>% 
+ mutate(word = fct_reorder(word,n)) %>% 
+ ggplot() + 
+   geom_col(aes(x = n, y = word), fill = "red")  +
+   gghighlight(word == 'consent') +
+   labs(title = "GDPR 위반시 자주 언급된 단어",
+        caption = "데이터 출처: Privacy Affairs",
+        x="단어 출현빈도수",
+        y="") +
+   theme_minimal(base_family = "NanumGothic")
+```
+
+
